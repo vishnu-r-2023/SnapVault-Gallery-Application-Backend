@@ -1,0 +1,23 @@
+{
+  "name": "authentiscan-backend",
+  "version": "1.0.0",
+  "description": "Backend for AuthentiScan application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.8.6",
+    "multer": "^1.4.5-lts.2",
+    "sharp": "^0.34.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
