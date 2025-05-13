@@ -13,7 +13,7 @@ const sharp = require('sharp');
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Adjust if your frontend runs elsewhere
+  origin: ['http://localhost:3000', 'https://snap-vault-gallery-application-frontend-menr.vercel.app','https://snap-vault-gallery-application-frontend-menr.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
