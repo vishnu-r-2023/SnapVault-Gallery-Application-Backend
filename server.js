@@ -51,6 +51,19 @@ const photoSchema = new mongoose.Schema({
 });
 const Photo = mongoose.model('Photo', photoSchema);
 
+// Publication Schema
+const publicationSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    image: { type: String, required: true }, // filename from Photo
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+    isPublic: { type: Boolean, default: true },
+    username: { type: String },
+    paid: { type: Boolean, default: false }
+});
+const Publication = mongoose.model('Publication', publicationSchema);
+
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -79,6 +92,80 @@ const upload = multer({
         cb(null, true);
     },
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB max
+});
+
+// Publication Endpoints
+// Protected route middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'Access denied' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ message: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+// Create publication
+app.post('/api/publications', authenticateToken, async (req, res) => {
+    try {
+        const { image, title, description, isPublic, username, paid } = req.body;
+        if (!image || !title || !description) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+        const publication = new Publication({
+            user: req.user.userId,
+            image,
+            title,
+            description,
+            isPublic: isPublic !== undefined ? isPublic : true,
+            username,
+            paid: !!paid
+        });
+        await publication.save();
+        res.status(201).json({ message: 'Publication created', publication });
+    } catch (error) {
+        console.error('Create publication error:', error);
+        res.status(500).json({ message: 'Error creating publication' });
+    }
+});
+// Get all publications (optionally filter by public)
+app.get('/api/publications', async (req, res) => {
+    try {
+        // Optionally filter by public, or by user if authenticated
+        let filter = {};
+        if (req.query.publicOnly === 'true') {
+            filter.isPublic = true;
+        }
+        const publications = await Publication.find(filter).sort({ createdAt: -1 });
+        res.json({ publications });
+    } catch (error) {
+        console.error('Get publications error:', error);
+        res.status(500).json({ message: 'Error fetching publications' });
+    }
+});
+// Delete a publication
+app.delete('/api/publications/:id', authenticateToken, async (req, res) => {
+    try {
+        const pub = await Publication.findById(req.params.id);
+        if (!pub) {
+            return res.status(404).json({ message: 'Publication not found' });
+        }
+        if (pub.user.toString() !== req.user.userId) {
+            return res.status(403).json({ message: 'Not authorized to delete this publication' });
+        }
+        await pub.deleteOne();
+        res.json({ message: 'Publication deleted' });
+    } catch (error) {
+        console.error('Delete publication error:', error);
+        res.status(500).json({ message: 'Error deleting publication' });
+    }
 });
 
 // Routes
@@ -168,24 +255,6 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ message: 'Error during login' });
     }
 });
-
-// Protected route middleware
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ message: 'Access denied' });
-    }
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ message: 'Invalid token' });
-        }
-        req.user = user;
-        next();
-    });
-};
 
 // Photo upload endpoint
 app.post('/api/photos/upload', authenticateToken, upload.array('photo', 10), async (req, res) => {

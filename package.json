@@ -1,7 +1,7 @@
 {
-  "name": "authentiscan-backend",
+  "name": "snapvault-backend",
   "version": "1.0.0",
-  "description": "Backend for AuthentiScan application",
+  "description": "Backend for SnapVault application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
